@@ -1,0 +1,47 @@
+// quadrature lfo
+
+{100, 4}clk;
+
+:mY:{{}mouseY, 8, 12}uexp;
+:mX:{{}mouseX, 1, 4}uexp;
+
+// {{5}imp, 0, :mY:}toJS;
+
+:speedMod:{{:speedFdbk:}tri, 0.5, 64}ulin;
+:speedFdbk:{{:speedMod:, 0.25}tri, :mX:, :mY:}ulin;
+
+:masterSpeed:{:speedMod:}const;
+							
+:aOffset:{{{1}clp, [1], [0, 0.2]}rsq}const;
+:bOffset:{{{2}clp, [1], [0.25, 0.45]}rsq}const;
+:cOffset:{{{3}clp, [1], [0.5, 0.7]}rsq}const;
+:dOffset:{{{4}clp, [1], [0.75, 0.95]}rsq}const;
+
+:a:{{:masterSpeed:, 0.1}saw, 0, 1}blin;
+:b:{{:masterSpeed:, 0.25}saw, 0, 1}blin;
+:c:{{:masterSpeed:, 0.55}saw, 0, 1}blin;
+:d:{{:masterSpeed:, 0.75}saw, 0, 1}blin;
+
+:sum1:{:a:, :b:, :c:, :d:}mul;
+:noise:{{1}noiz, {{{{:a:, 1, 32}ulin, 0.8}pul, -1}mul, 50, 100, 0.05, 20}env}mul;
+
+
+:sinFM:{{:base:,:modA:}add}sin;
+
+:base:{{:a:, 200, 600}uexp}sin;
+:mod:{:b:, 100}mul;
+:fmIndex:{:sh:, 10}mul;
+:modA:{{:mod:}sin, :fmIndex:}mul;
+
+:sh:{{{{1}noiz, 150}sah, 200, 10000}uexp, {{:c:, 120, 8000}uexp}sin, 1}mul;	
+
+
+:kickTrig:{{:c:, 1, 8}ulin}sqr;
+					 
+:kick:{{:kickTrig:, {:d:, 1, 4}uexp}\909b, 10}dist;
+				
+				
+:sinMod:{{{:c:, 1200, 120}uexp}sin, {:d:, 500, 12000}uexp, {:sum1:, 2, 5}uexp}lpz;
+			 
+			 
+>{{:sinFM:, :a:}mul, :noise:, {:sinMod:, :b:}mul, {:kick:, :b:}mul}mix;
