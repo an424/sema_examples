@@ -1,0 +1,43 @@
+// sequencing from lists w/s&h
+
+{110,4}clk;
+
+:kick:{{2}clt, 1.25}\909b;
+:snare:{{2, 0.5}clt, {{16}sin, 0.75, 1.25}ulin}\909;
+:hatTrig:{{2}clp, [1, 1, 4, 8]}rsq;
+:hats:{:hatTrig:, :scale:}\909closed;
+
+:beatMix:{{:kick:, :snare:, :hats:}sum, 20}dist;
+
+
+:midiNotes:{[37, 39, 40, 42, 44, 45, 47, 49, 51, 54]}const;				// midi notes C#m 
+
+
+:filterInt:{6}const;			// variable for filter cutoff trigger
+:time:{:filterInt:, 4}div; 		
+:lineTime:{{{60000, :time:}div, 110}div}const; 		// calculate note length in ms
+
+:indx:{{1.5}clp, [1, 1, 1, 2], [0, 1, 2]}rsq;			// oscillator switching index
+:envTrig:{:indx:}onzx;			// zero-crossing trig for envelope
+:env:{:envTrig:, 10, 1000, 0.1, 100}env;
+			
+      
+:noise:{1}noiz;
+:ramp:{4}clp;
+:scale:{{:noise:, 100}sah, [4], [0, 1, 2, 3, 4, 5, 6]}rsq;			// s&h triggers values to index midi notes
+:noteIndx:{:midiNotes:, :scale:}at;			// indexing midi notes
+:mtof:{{2, {{:noteIndx:, 69}sub, 12}div}pow, 440}mul;			// midi-to-frequency conversion
+
+
+:cutoff:{{{:filterInt:, 0.25}clt, 144}line, 720, 5200}uexp;		 // filter cutoff ramp
+
+
+// oscillators
+:sinOsc:{{:mtof:}sin, {{:mtof:, 4}div}sin}mul;
+:sqrOsc:{{:mtof:}sqr, {{:mtof:, 1}add}sqr, 1}mul;
+:triOsc:{{:mtof:, 2}div}tri;
+
+:switchedOscillator:{{{{[{:sinOsc:, :sqrOsc:}mul, :sqrOsc:, {:triOsc:, :sqrOsc:}mul], :indx:}at, :cutoff:, 2}lpz, :env:, 20}dist}mix;				// oscillator switch
+		
+    
+>{:beatMix:, :switchedOscillator:}mix;
